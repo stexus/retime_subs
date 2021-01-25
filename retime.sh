@@ -26,25 +26,25 @@ esac
 subs=(*.$jp_ext)
 #can only extract subtitles from mkv format
 #1 -> video
-prompt() {
+display() {
         info=$(mkvinfo "$1")
         declare -A extracts
         #declare an associative array with mkvextract # & name if applicable
         i=1
-        # probably clean up the grep mess here
-        while grep "Track number: $i" -A 10 <<< $info > /dev/null; do
-                if grep "Track number: $i" -A 10 <<< $info | grep 'subtitles' > /dev/null; then
+        while grep -w "Track number: $i" -A 10 <<< $info > /dev/null; do
+                if grep -w "Track number: $i" -A 10 <<< $info | grep 'subtitles' > /dev/null; then
                         name=$(grep "Track number: $i" -A 10 <<< $info| grep 'Name' | cut -d' ' -f5-)
                         display_name=${name:-$i}
-                        echo $display_name
+                        #echo $display_name
                         track=$((i - 1))
                         extracts[$track]=$display_name
                 fi
                 ((i++))
         done
+
         for i in ${!extracts[@]}; do
-                echo $i
-        done
+                printf "%s | %s\n" "$i" "${extracts[$i]}"
+        done | sort -n -k1
 }
 #1 -> video to extract from
 #2 -> subtitle to align
