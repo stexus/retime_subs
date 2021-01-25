@@ -6,11 +6,9 @@ set -euo pipefail
 #-o pipefail : saves error code of failed command in pipeline
 
 #prompt user if multiple subtitle tracks
-#extract subtitle given track
-#align via alass
-#delete extracted, rename aligned
 #option to only rename subtitles to match
 #error catching with more video files than subtitle files
+#automatic detection later
 jp_ext="srt"
 eng_ext="srt"
 to_align=true
@@ -26,15 +24,15 @@ while getopts ":e:n" opt; do
         esac
 done
 
-#rename subs to match
 subs=(*.$jp_ext)
-#can only extract subtitles from mkv format
 videos=(*.mkv)
 
 
 #1 -> video
 chosen_track=-1
+prev_info=""
 prompt() {
+        chosen_track=-1
         info=$(mkvinfo "$1")
         declare -A extracts
         declare -A codecs
@@ -53,15 +51,21 @@ prompt() {
                 fi
                 ((i++))
         done
-        for i in ${!extracts[@]}; do
-                #consider removing pgs entirely
-                printf "%s | %s (%s)\n" "$i" "${extracts[$i]}" "${codecs[$i]}"
-        done | sort -n -k1
-        while [ $chosen_track -lt 0 ]; do
-                read -p 'Enter track number: ' chosen_track
-                [ ${extracts[$chosen_track]+1} ] || { echo "Please enter a valid track" && chosen_track=-1; }
-                eng_ext=${codecs[$chosen_track]}
-        done
+
+        printf -v curr_info "%s" "${!extracts[@]} ${extracts[@]}" > /dev/null
+        echo $curr_info
+        if [ "$curr_info" != "$prev_info" ]; then
+                for i in ${!extracts[@]}; do
+                        #consider removing pgs entirely
+                        printf "%s | %s (%s)\n" "$i" "${extracts[$i]}" "${codecs[$i]}"
+                done | sort -n -k1
+                while [ $chosen_track -lt 0 ]; do
+                        read -p 'Enter track number: ' chosen_track
+                        [ ${extracts[$chosen_track]+1} ] || { echo "Please enter a valid track" && chosen_track=-1; }
+                        eng_ext=${codecs[$chosen_track]}
+                done
+        fi
+        prev_info="$curr_info"
 }
 
 #1 -> title
@@ -81,10 +85,10 @@ align() {
 
 it=$((${#subs[@]} < ${#videos[@]} ? ${#subs[@]} : ${#videos[@]}))
 #renaming
-for ((i=0;i<it;i++)); do
-        title=${videos[$i]%.mkv}
+for ((iter=0;iter<it;iter++)); do
+        title=${videos[$iter]%.mkv}
         untimed="${title}.jp.${jp_ext}"
-        mv "${subs[$i]}" "$untimed" 2>/dev/null || true
+        mv "${subs[$iter]}" "$untimed" 2>/dev/null || true
         echo "working"
         [ to_align ] && align "$title" "$untimed"
 done
