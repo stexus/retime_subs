@@ -38,26 +38,23 @@ prompt() {
         declare -A codecs
         #declare an associative array with mkvextract # & name if applicable
         i=1
-        while grep -w "Track number: $i" -A 10 <<< $info > /dev/null; do
+        while grep -w "Track number: $i" <<< $info > /dev/null; do
                 curr=$(grep -w "Track number: $i" -A 10 <<< $info)
-                if grep -w "Track number: $i" -A 10 <<< $info | grep 'subtitles' > /dev/null; then
-                        name=$(grep "Track number: $i" -A 10 <<< $info| grep 'Name' | cut -d' ' -f5-)
+                if grep 'subtitles' <<< $curr > /dev/null; then
+                        name=$(awk -F': ' '/Name/{print $2}' <<< $curr)
                         codec=$(awk -F'/' '/Codec ID/{print tolower($2)}' <<< $curr)
                         display_name=${name:-$i}
-                        #echo $display_name
                         track=$((i - 1))
                         extracts[$track]=$display_name
                         codecs[$track]=$codec
                 fi
                 ((i++))
         done
-
-        printf -v curr_info "%s" "${!extracts[@]} ${extracts[@]}" > /dev/null
-        echo $curr_info
+        printf -v curr_info "%s" "${!extracts[@]} ${extracts[@]}"
         if [ "$curr_info" != "$prev_info" ]; then
-                for i in ${!extracts[@]}; do
+                for key in ${!extracts[@]}; do
                         #consider removing pgs entirely
-                        printf "%s | %s (%s)\n" "$i" "${extracts[$i]}" "${codecs[$i]}"
+                        printf "%s | %s (%s)\n" "$key" "${extracts[$key]}" "${codecs[$key]}"
                 done | sort -n -k1
                 while [ $chosen_track -lt 0 ]; do
                         read -p 'Enter track number: ' chosen_track
@@ -85,10 +82,10 @@ align() {
 
 it=$((${#subs[@]} < ${#videos[@]} ? ${#subs[@]} : ${#videos[@]}))
 #renaming
+echo "${it} files"
 for ((iter=0;iter<it;iter++)); do
         title=${videos[$iter]%.mkv}
         untimed="${title}.jp.${jp_ext}"
         mv "${subs[$iter]}" "$untimed" 2>/dev/null || true
-        echo "working"
         [ to_align ] && align "$title" "$untimed"
 done
