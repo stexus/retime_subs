@@ -30,9 +30,10 @@ videos=(*.mkv)
 
 #1 -> video
 chosen_track=-1
-prev_info=""
+prev_name=""
+#todo: dont reprompt if chosen track and name are same | done
+#todo: save all previous names, automatically choose correct track
 prompt() {
-        chosen_track=-1
         info=$(mkvinfo "$1")
         declare -A extracts
         declare -A codecs
@@ -43,26 +44,27 @@ prompt() {
                 if grep 'subtitles' <<< $curr > /dev/null; then
                         name=$(awk -F': ' '/Name/{print $2}' <<< $curr)
                         codec=$(awk -F'/' '/Codec ID/{print tolower($2)}' <<< $curr)
-                        display_name=${name:-$i}
                         track=$((i - 1))
+                        display_name=${name:-$track}
                         extracts[$track]=$display_name
                         codecs[$track]=$codec
                 fi
                 ((i++))
         done
-        printf -v curr_info "%s" "${!extracts[@]} ${extracts[@]}"
-        if [ "$curr_info" != "$prev_info" ]; then
+        if ! [ ${extracts[$chosen_track]+1} ] || [ "$prev_name" != "${extracts[$chosen_track]}" ]; then
                 for key in ${!extracts[@]}; do
                         #consider removing pgs entirely
                         printf "%s | %s (%s)\n" "$key" "${extracts[$key]}" "${codecs[$key]}"
                 done | sort -n -k1
+                chosen_track=-1
                 while [ $chosen_track -lt 0 ]; do
                         read -p 'Enter track number: ' chosen_track
-                        [ ${extracts[$chosen_track]+1} ] || { echo "Please enter a valid track" && chosen_track=-1; }
-                        eng_ext=${codecs[$chosen_track]}
+                        [ ${extracts[$chosen_track]+0} ] || { echo "Please enter a valid track" && chosen_track=-1; }
                 done
+                echo 
         fi
-        prev_info="$curr_info"
+        eng_ext=${codecs[$chosen_track]}
+        prev_name=${extracts[$chosen_track]}
 }
 
 #1 -> title
