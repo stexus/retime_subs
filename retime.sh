@@ -12,6 +12,7 @@ set -euo pipefail
 jp_ext="srt"
 eng_ext="srt"
 to_align=true
+{ compgen -G "*.srt" >/dev/null && jp_ext="srt"; } || { compgen -G "*.ass" >/dev/null && jp_ext="ass"; } 
 while getopts ":e:n" opt; do
         case ${opt} in
                 e) jp_ext="${OPTARG}"
@@ -23,7 +24,6 @@ while getopts ":e:n" opt; do
                 \?) echo "retime [-e] EXTENSION [-n]"
         esac
 done
-
 subs=(*.$jp_ext)
 videos=(*.mkv)
 
