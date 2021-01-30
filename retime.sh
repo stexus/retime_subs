@@ -32,7 +32,7 @@ videos=(*.mkv)
 chosen_track=-1
 prev_name=""
 #todo: dont reprompt if chosen track and name are same | done
-#todo: save all previous names, automatically choose correct track
+#todo: save all previous names, automatically choose correct track | done
 prompt() {
         info=$(mkvinfo "$1")
         declare -A extracts
@@ -51,10 +51,14 @@ prompt() {
                 fi
                 ((i++))
         done
-        if ! [ ${extracts[$chosen_track]+1} ] || [ "$prev_name" != "${extracts[$chosen_track]}" ]; then
-                for key in ${!extracts[@]}; do
+        if [ $chosen_track -gt 0 ]; then
+                for track in ${!extracts[@]}; do
+                        [ "${extracts[$track]}" = "$prev_name" ] && { chosen_track=$track && break; }
+                done
+        elif ! [ ${extracts[$chosen_track]+1} ] || [ "$prev_name" != "${extracts[$chosen_track]}" ]; then
+                for track in ${!extracts[@]}; do
                         #consider removing pgs entirely
-                        printf "%s | %s (%s)\n" "$key" "${extracts[$key]}" "${codecs[$key]}"
+                        printf "%s | %s (%s)\n" "$track" "${extracts[$track]}" "${codecs[$track]}"
                 done | sort -n -k1
                 chosen_track=-1
                 while [ $chosen_track -lt 0 ]; do
