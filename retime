@@ -79,12 +79,12 @@ prompt() {
 #1 -> title
 #2 -> subtitle to align
 align() {
-        prompt "${1}.mkv"
         title="$1"
+        prompt "${title}.mkv"
         eng_sub="${title}.eng.${eng_ext}"
         untimed="$2"
         timed="${title}.retimed.${jp_ext}"
-        mkvextract tracks "$1".mkv "$track":"$eng_sub"
+        mkvextract tracks "${title}.mkv" "$chosen_track":"$eng_sub"
         alass-cli "$eng_sub" "$untimed" "$timed"
         mv "$timed" "$untimed"
         rm "$eng_sub"
