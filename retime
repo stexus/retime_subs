@@ -5,6 +5,10 @@ set -euo pipefail
 #-u : error on non defined variable
 #-o pipefail : saves error code of failed command in pipeline
 
+#empty array on no match
+shopt -s nullglob
+
+
 #prompt user if multiple subtitle tracks
 #option to only rename subtitles to match
 #error catching with more video files than subtitle files
@@ -13,6 +17,8 @@ jp_ext="srt"
 eng_ext="srt"
 to_align=true
 { compgen -G "*.srt" >/dev/null && jp_ext="srt"; } || { compgen -G "*.ass" >/dev/null && jp_ext="ass"; } 
+subs=(*.$jp_ext)
+videos=(*.mkv)
 while getopts ":e:n" opt; do
         case ${opt} in
                 e) jp_ext="${OPTARG}"
@@ -21,11 +27,10 @@ while getopts ":e:n" opt; do
                         ;;
                 :) echo "Invalid option: $OPTARG requires an argument" 1>&2
                         ;;
-                \?) echo "retime [-e] EXTENSION [-n]"
+                \?) echo "retime [-e] EXTENSION [-n]" && exit 1
+                        ;;
         esac
 done
-subs=(*.$jp_ext)
-videos=(*.mkv)
 
 
 #1 -> video
@@ -93,5 +98,5 @@ for ((iter=0;iter<it;iter++)); do
         title=${videos[$iter]%.mkv}
         untimed="${title}.jp.${jp_ext}"
         mv "${subs[$iter]}" "$untimed" 2>/dev/null || true
-        [ to_align ] && align "$title" "$untimed"
+        $to_align && align "$title" "$untimed"
 done
